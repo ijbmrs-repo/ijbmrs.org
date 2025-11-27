@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Public Submit — IJBMRS</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <h2>International Journal of Business & Management Research Studies</h2>
+  <nav><ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="login.html">Admin login</a></li>
+  </ul></nav>
+</aside>
+<main>
+  <h1>Public Submission Form</h1>
+  <p>Authors can submit via this public form; submissions land in Netlify Forms for the editorial team to review.</p>
+  <form name="public-submit" method="POST" data-netlify="true" netlify-honeypot="bot-field" enctype="multipart/form-data" action="/success.html">
+    <input type="hidden" name="form-name" value="public-submit">
+    <input type="hidden" name="bot-field">
+    <label>Author Name<input type="text" name="author" required></label>
+    <label>Email<input type="email" name="email" required></label>
+    <label>Title<input type="text" name="title" required></label>
+    <label>Upload PDF<input type="file" name="file" accept="application/pdf" required></label>
+    <button type="submit">Submit</button>
+  </form>
+</main>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Upload — IJBMRS</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <h2>International Journal of Business & Management Research Studies</h2>
+  <nav><ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="browse.html">Browse</a></li>
+    <li><a href="issues.html">Issues</a></li>
+    <li><a href="submit.html">Public Submit</a></li>
+    <li><a href="#" id="logout">Logout</a></li>
+  </ul></nav>
+</aside>
+<main>
+  <h1>Admin — Upload Article</h1>
+  <p>This admin panel is a lightweight static admin: login is client-side (username/password = admin/admin). When you submit, the form will post to Netlify Forms (so Netlify stores a copy). Additionally the uploaded file and metadata are saved locally in your browser so you can preview and manage uploads on this browser.</p>
+
+  <form id="adminUpload" name="admin-upload" method="POST" data-netlify="true" enctype="multipart/form-data" action="/success.html">
+    <input type="hidden" name="form-name" value="admin-upload">
+    <label>Author Name<input type="text" name="author" required></label>
+    <label>Email<input type="email" name="email" required></label>
+    <label>Title<input type="text" name="title" required></label>
+    <label>Select Year/Issue
+      <select name="issue">
+        <option value="2025-issue-1">2025 — Issue 1</option>
+        <option value="2025-issue-2">2025 — Issue 2</option>
+        <option value="2024-issue-1">2024 — Issue 1</option>
+      </select>
+    </label>
+    <label>Upload PDF<input type="file" name="file" accept="application/pdf" id="fileInput" required></label>
+    <button type="submit">Submit</button>
+  </form>
+
+  <section style="margin-top:24px;">
+    <h2>Your local uploads (preview on this browser)</h2>
+    <p>Files saved here are only visible in this browser. Admin must move files from Netlify forms dashboard to the `/pdfs/` folder to publish to the live repository.</p>
+    <ul id="uploadsList"></ul>
+  </section>
+</main>
+
+<script>
+// require login
+if(localStorage.getItem('ijbmrs_admin_auth')!=='1'){
+  location.href='login.html';
+}
+
+// logout
+document.getElementById('logout').addEventListener('click', function(e){
+  e.preventDefault();
+  localStorage.removeItem('ijbmrs_admin_auth');
+  location.href='login.html';
+});
+
+// helper to save uploads in localStorage as base64 for preview
+function readFileAsDataURL(file){ return new Promise((res,rej)=>{
+  const r=new FileReader();
+  r.onload = ()=>res(r.result);
+  r.onerror = rej;
+  r.readAsDataURL(file);
+});}
+
+function renderList(){
+  const list = document.getElementById('uploadsList');
+  list.innerHTML='';
+  const uploads = JSON.parse(localStorage.getItem('ijbmrs_local_uploads')||'[]');
+  if(uploads.length===0){ list.innerHTML='<li>No local uploads yet.</li>'; return; }
+  uploads.forEach((u,idx)=>{
+    const li=document.createElement('li');
+    li.innerHTML = '<strong>'+escapeHtml(u.title)+'</strong> — '+escapeHtml(u.author) + ' ('+escapeHtml(u.issue)+') '
+      + '<a href="'+u.dataUrl+'" download="'+(u.filename||'file.pdf')+'">Download</a>'
+      + ' <button data-idx="'+idx+'" class="delete">Delete</button>';
+    list.appendChild(li);
+  });
+  document.querySelectorAll('.delete').forEach(btn=> btn.addEventListener('click', function(){
+    const i=parseInt(this.getAttribute('data-idx'));
+    const arr=JSON.parse(localStorage.getItem('ijbmrs_local_uploads')||'[]');
+    arr.splice(i,1);
+    localStorage.setItem('ijbmrs_local_uploads', JSON.stringify(arr));
+    renderList();
+  }));
+}
+
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+
+document.getElementById('adminUpload').addEventListener('submit', async function(e){
+  // before letting form submit to Netlify, save a local preview so admin sees it immediately
+  const fileInput = document.getElementById('fileInput');
+  if(fileInput.files.length===0){ return; }
+  const file = fileInput.files[0];
+  const dataUrl = await readFileAsDataURL(file);
+  const form = e.target;
+  const formData = new FormData(form);
+  const record = {
+    author: formData.get('author'),
+    email: formData.get('email'),
+    title: formData.get('title'),
+    issue: formData.get('issue'),
+    filename: file.name,
+    dataUrl: dataUrl,
+    created: new Date().toISOString()
+  };
+  const arr = JSON.parse(localStorage.getItem('ijbmrs_local_uploads')||'[]');
+  arr.unshift(record);
+  localStorage.setItem('ijbmrs_local_uploads', JSON.stringify(arr));
+  // allow normal submit (which will post to Netlify Forms and redirect to success.html)
+  // give a tiny delay to ensure FileReader finished saving
+  // no preventDefault here — let the browser do the POST so Netlify collects the file.
+  setTimeout(()=>{},50);
+});
+
+// render on load
+renderList();
+</script>
+</body>
+</html>
